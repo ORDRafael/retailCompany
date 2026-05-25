@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:obramat/screens/cart.dart';
-import 'package:obramat/screens/home.dart';
-import 'package:obramat/screens/pedidos.dart';
-import 'package:obramat/screens/perfil.dart';
-import 'package:obramat/screens/projects.dart';
+import 'package:go_router/go_router.dart';
 import 'package:obramat/utils/colors.dart'; 
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  final Widget child;
+  const MainShell({super.key, required this.child});
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -16,24 +13,25 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    Home(),           
-    Projects(),           
-    CartScreen(),     
-    OrdersScreen(),   
-    ProfileScreen(),  
+  final List<String> _routes = [
+    '/home',
+    '/projects', 
+    '/cart',
+    '/orders',
+    '/profile',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+       body: widget.child,
       bottomNavigationBar: NavigationBar(
         backgroundColor: Colors.white,
         indicatorShape: CircleBorder(),
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
+          context.go(_routes[index]);
         },
         destinations: [
           NavigationDestination(

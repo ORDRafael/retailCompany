@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
+import 'package:obramat/widgets/homeCard.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -277,19 +278,17 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    // Tab 1 - Best Seller
                     ListView.builder(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
                       itemCount: 3,
-                      itemBuilder: (context, index) => homeCard(),
+                      itemBuilder: (context, index) => const HomeCard(),
                     ),
-                    // Tab 2 - On Sale
                     ListView.builder(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
                       itemCount: 3,
-                      itemBuilder: (context, index) => homeCard(),
+                      itemBuilder: (context, index) => const HomeCard(),
                     ),
                   ],
                 ),

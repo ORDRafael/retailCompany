@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:obramat/main_shell.dart';
+import 'package:obramat/router/app_router.dart';
 import 'utils/colors.dart';
 
 void main() {
@@ -12,13 +12,15 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Flutter Demo',
       theme: ThemeData(
         primaryColor: AppColors.primaryColor,
       ),
-      home: MainShell(),
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
+
 
