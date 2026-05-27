@@ -4,10 +4,9 @@ import 'package:obramat/screens/cart.dart';
 import 'package:obramat/screens/home.dart';
 import 'package:obramat/screens/pedidos.dart';
 import 'package:obramat/screens/perfil.dart';
-import 'package:obramat/screens/placeholder.dart';
 import 'package:obramat/screens/product.dart';
 import 'package:obramat/screens/projects.dart';
-
+import 'package:obramat/screens/checkout.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/home',
@@ -36,14 +35,14 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const ProfileScreen(),
         ),
         GoRoute(
-          path: '/checkout',
-          builder: (context, state) => const PlaceholderScreen(title: 'Checkout'),
-        ),
-        GoRoute(
           path: '/product/:id',
           builder: (context, state) => ProductScreen(),
         ),
       ],
+    ),
+    GoRoute(
+      path: '/checkout',
+      builder: (context, state) => const CheckoutScreen(),
     ),
   ],
 );
