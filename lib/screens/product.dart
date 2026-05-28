@@ -522,7 +522,11 @@ Widget productGridCard(BuildContext context) {
               Positioned(
                 top: 8,
                 right: 8,
-                child: Icon(Icons.favorite_border, size: 18, color: Colors.grey),
+                child: Icon(
+                  Icons.favorite_border,
+                  size: 18,
+                  color: Colors.grey,
+                ),
               ),
             ],
           ),
