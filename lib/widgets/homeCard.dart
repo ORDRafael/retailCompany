@@ -8,7 +8,7 @@ class HomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.go('/product/123'),
+      onTap: () => context.push('/product/123'),
       child: Container(
       margin: EdgeInsets.only(bottom: 16),
       height: 400,

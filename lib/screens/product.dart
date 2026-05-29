@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:obramat/widgets/appbar.dart';
 import 'package:obramat/utils/colors.dart';
+import 'package:go_router/go_router.dart';
 
 class ProductScreen extends StatefulWidget {
   ProductScreen({super.key});
@@ -22,7 +23,13 @@ class _ProductScreenState extends State<ProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(),
+      appBar: AppBarWidget(
+        title: 'Producto',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: SingleChildScrollView(
         child: Container(
           margin: const EdgeInsets.all(16),
