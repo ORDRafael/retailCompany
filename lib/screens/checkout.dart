@@ -13,6 +13,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final PageController _pageController = PageController();
 
+  int? _selectedPayment;
   int _selectedDate = 0;
 
   final List<Map<String, String>> _dates = [
@@ -174,7 +175,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: ElevatedButton(
                     onPressed: _currentStep < _steps.length - 1
                         ? _nextPage
-                        : () {}, // confirmar pedido
+                        : () => context.push('/order-success'), // confirmar pedido
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
                       shape: RoundedRectangleBorder(
@@ -184,7 +185,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: Text(
                       _currentStep < _steps.length - 1
                           ? 'Continuar'
-                          : 'Confirmar Pedido',
+                          : 'Pay Now Securely',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -388,14 +389,344 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _buildStepPago() {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
-      child: Center(child: Text('Método de pago')),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.credit_card),
+                  SizedBox(width: 8),
+                  Text('Credit / Debit Card'),
+                  Spacer(),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'VISA',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'MC',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Card Number',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              TextFormField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: '0000 0000 0000 0000',
+                ),
+              ),
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Expiration Date',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        TextFormField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: 'MM/YY',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CVC',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        TextFormField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: 'CVC',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+
+              SizedBox(height: 12),
+              RadioGroup<int>(
+                groupValue: _selectedPayment,
+                onChanged: (value) => setState(() => _selectedPayment = value!),
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: ListTile(
+                        leading: Radio<int>(value: 1),
+                        title: Text(
+                          'PayPal',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        trailing: Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: Colors.blue[700],
+                        ),
+                        onTap: () => setState(() => _selectedPayment = 1),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: ListTile(
+                        leading: Radio<int>(value: 2),
+                        title: Text(
+                          'Direct Bank Transfer',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        trailing: Icon(
+                          Icons.account_balance,
+                          color: Colors.grey[700],
+                        ),
+                        onTap: () => setState(() => _selectedPayment = 2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildStepConfirmacion() {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
-      child: Center(child: Text('Confirmación')),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Order Summary',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: 2,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Imagen
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey[200],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              'lib/images/cement.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        // Texto
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Portland Cement High Performance 25kg',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'QTY: 12',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  Text(
+                                    '€114.60',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              Divider(color: Colors.grey[300]),
+              SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Subtotal', style: TextStyle(color: Colors.grey[600])),
+                  Text(
+                    '€463.60',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Shipping (Express)',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  Text('€24.90', style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tax (VAT 21%)',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  Text(
+                    '€102.58',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Divider(color: Colors.grey[300]),
+              SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  Text(
+                    '€591.08',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              // Texto de seguridad
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 14,
+                    color: Colors.grey[500],
+                  ),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Your transaction is protected by 256-bit SSL encryption. Professional insurance covers all bulk material deliveries.',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
+
+
+//TODO: Revisión → Proyecto → Entrega → Pago → Confirmación para agregar la compra a un proyecto

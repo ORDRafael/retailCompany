@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:obramat/main_shell.dart';
 import 'package:obramat/screens/cart.dart';
 import 'package:obramat/screens/home.dart';
+import 'package:obramat/screens/orderSucces.dart';
 import 'package:obramat/screens/pedidos.dart';
 import 'package:obramat/screens/perfil.dart';
 import 'package:obramat/screens/product.dart';
@@ -9,7 +10,7 @@ import 'package:obramat/screens/projects.dart';
 import 'package:obramat/screens/checkout.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/home',
+  initialLocation: '/checkout',
   routes: [
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
@@ -43,6 +44,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/checkout',
       builder: (context, state) => const CheckoutScreen(),
+    ),
+    GoRoute(
+      path: '/order-success',
+      builder: (context, state) => const OrderSuccessScreen(),
     ),
   ],
 );

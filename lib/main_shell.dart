@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:obramat/utils/colors.dart'; 
+import 'package:obramat/utils/colors.dart';
 
-class MainShell extends StatefulWidget {
+class MainShell extends StatelessWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
 
-  @override
-  State<MainShell> createState() => _MainShellState();
-}
+  int _getIndexFromLocation(String location) {
+    if (location.startsWith('/home')) return 0;
+    if (location.startsWith('/projects')) return 1;
+    if (location.startsWith('/cart')) return 2;
+    if (location.startsWith('/orders')) return 3;
+    if (location.startsWith('/profile')) return 4;
+    return 0;
+  }
 
-class _MainShellState extends State<MainShell> {
-  int _selectedIndex = 0;
-
-  final List<String> _routes = [
+  final List<String> _routes = const [
     '/home',
-    '/projects', 
+    '/projects',
     '/cart',
     '/orders',
     '/profile',
@@ -23,14 +25,16 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).uri.toString();
+    final currentIndex = _getIndexFromLocation(location);
+
     return Scaffold(
-       body: widget.child,
+      body: child,
       bottomNavigationBar: NavigationBar(
         backgroundColor: Colors.white,
         indicatorShape: CircleBorder(),
-        selectedIndex: _selectedIndex,
+        selectedIndex: currentIndex,
         onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
           context.go(_routes[index]);
         },
         destinations: [
