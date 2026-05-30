@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 
@@ -526,7 +527,9 @@ class _OrdersScreenState extends State<OrdersScreen>
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    
+                  },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -579,7 +582,9 @@ class _OrdersScreenState extends State<OrdersScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {},
+              onPressed: () {
+                context.push('/order-details');
+              },
               child: Text(
                 'Track Order',
                 style: TextStyle(

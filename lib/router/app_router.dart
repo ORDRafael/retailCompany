@@ -12,9 +12,10 @@ import 'package:obramat/screens/projectDetail.dart';
 import 'package:obramat/screens/projects.dart';
 import 'package:obramat/screens/checkout.dart';
 import 'package:obramat/screens/register.dart';
+import 'package:obramat/screens/orderDetails.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/project-detail',
+  initialLocation: '/login',
   routes: [
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
@@ -68,6 +69,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
+    ),
+    GoRoute(
+      path: '/order-details',
+      builder: (context, state) => const OrderDetailScreen(),
     ),
   ],
 );
