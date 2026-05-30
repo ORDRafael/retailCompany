@@ -15,7 +15,7 @@ import 'package:obramat/screens/register.dart';
 import 'package:obramat/screens/orderDetails.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/home',
   routes: [
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),

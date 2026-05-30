@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:obramat/providers/product_providers.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 import 'package:obramat/widgets/homeCard.dart';
 
-class Home extends StatefulWidget {
+class Home extends ConsumerStatefulWidget {
   const Home({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  ConsumerState<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+class _HomeState extends ConsumerState<Home> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -27,6 +29,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final bestSellers = ref.watch(bestSellersProvider);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBarWidget(
@@ -281,14 +284,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     ListView.builder(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
-                      itemCount: 3,
-                      itemBuilder: (context, index) => const HomeCard(),
+                      itemCount: bestSellers.length,
+                      itemBuilder: (context, index) => HomeCard(product: bestSellers[index]),
                     ),
                     ListView.builder(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
                       itemCount: 3,
-                      itemBuilder: (context, index) => const HomeCard(),
+                      itemBuilder: (context, index) => HomeCard(product: bestSellers[index]),
                     ),
                   ],
                 ),
