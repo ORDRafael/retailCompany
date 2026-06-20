@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:obramat/models/order.dart';
+import 'package:obramat/providers/orders_provider.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 
 //TODO: recordar verificar como funciona el tab bar view
-class OrdersScreen extends StatefulWidget {
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen>
+class _OrdersScreenState extends ConsumerState<OrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -29,6 +32,13 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final allOrders = ref.watch(ordersProvider);
+    final activeOrders = allOrders
+        .where((o) => o.status != OrderStatus.delivered)
+        .toList();
+    final completedOrders = allOrders
+        .where((o) => o.status == OrderStatus.delivered)
+        .toList();
     return Scaffold(
       appBar: AppBarWidget(title: 'My orders'),
       body: Padding(
@@ -70,165 +80,8 @@ class _OrdersScreenState extends State<OrdersScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'IN TRANSIT',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    Text(
-                                      '02',
-                                      style: TextStyle(
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFFFDBCE),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'PROCESSING',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    Text(
-                                      '01',
-                                      style: TextStyle(
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        orderInTransitCard(context),
-                        SizedBox(height: 16),
-                        orderInProcessCard(context),
-                        SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            // aquí cargarías más pedidos
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'LOAD PREVIOUS ORDERS',
-                                style: TextStyle(
-                                  color: AppColors.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Icon(
-                                Icons.keyboard_arrow_down,
-                                color: AppColors.primaryColor,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'TOTAL COMPLETED ORDERS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                '142',
-                                style: TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                        orderInProcessCard(context),
-                        SizedBox(height: 16),
-                        orderInProcessCard(context),
-                        SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            // aquí cargarías más pedidos
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'LOAD PREVIOUS ORDERS',
-                                style: TextStyle(
-                                  color: AppColors.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Icon(
-                                Icons.keyboard_arrow_down,
-                                color: AppColors.primaryColor,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildOrdersList(activeOrders),
+                  _buildOrdersList(completedOrders),
                 ],
               ),
             ),
@@ -237,6 +90,138 @@ class _OrdersScreenState extends State<OrdersScreen>
       ),
     );
   }
+
+Widget _buildOrdersList(List<Order> orders) {
+    if (orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[300]),
+            SizedBox(height: 16),
+            Text('No hay pedidos aquí', style: TextStyle(color: Colors.grey[500])),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: orders.map((order) => GestureDetector(
+          onTap: () => context.push('/order/${order.id}'),
+          child: orderCard(order),
+        )).toList(),
+      ),
+    );
+  }
+
+   Widget orderCard(Order order) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ORDER ID',
+                    style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.w500, fontSize: 14)),
+                  Text(order.id, // 👈
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                ],
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: _statusColor(order.status), // 👈
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text(_statusLabel(order.status), // 👈
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                width: MediaQuery.of(context).size.width * 0.30,
+                height: MediaQuery.of(context).size.width * 0.30,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: order.items.isNotEmpty
+                      ? Image.asset(order.items[0].product.images[0]) // 👈
+                      : Icon(Icons.shopping_bag_outlined),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${order.date.day}/${order.date.month}/${order.date.year}', // 👈
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '€${order.total.toStringAsFixed(2)}', // 👈
+                    style: TextStyle(color: Colors.black, fontSize: 26, fontWeight: FontWeight.bold),
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.local_shipping_outlined, color: AppColors.primaryColor, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${order.totalArticles} ARTÍCULOS', // 👈
+                        style: TextStyle(color: AppColors.primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+Color _statusColor(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.inTransit:
+        return AppColors.secondaryColor;
+      case OrderStatus.processing:
+        return Colors.orange;
+      case OrderStatus.delivered:
+        return Colors.green;
+      case OrderStatus.cancelled:
+        return Colors.red;
+    }
+  }
+
+  String _statusLabel(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.inTransit:
+        return 'IN TRANSIT';
+      case OrderStatus.processing:
+        return 'PROCESSING';
+      case OrderStatus.delivered:
+        return 'DELIVERED';
+      case OrderStatus.cancelled:
+        return 'CANCELLED';
+    }
+  }
+}
+
 
   Container orderInProcessCard(BuildContext context) {
     return Container(
@@ -598,4 +583,3 @@ class _OrdersScreenState extends State<OrdersScreen>
       ),
     );
   }
-}

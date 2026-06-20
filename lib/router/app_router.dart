@@ -77,8 +77,11 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const RegisterScreen(),
     ),
     GoRoute(
-      path: '/order-details',
-      builder: (context, state) => const OrderDetailScreen(),
-    ),
+  path: '/order/:id',
+  builder: (context, state) {
+    final id = state.pathParameters['id']!;
+    return OrderDetailScreen(orderId: id);
+  },
+),
   ],
 );

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:obramat/providers/cart_provider.dart';
+import 'package:obramat/providers/orders_provider.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 
-class CheckoutScreen extends StatefulWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  State<CheckoutScreen> createState() => _CheckoutScreenState();
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final PageController _pageController = PageController();
 
   int? _selectedPayment;
@@ -175,7 +178,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: ElevatedButton(
                     onPressed: _currentStep < _steps.length - 1
                         ? _nextPage
-                        : () => context.push('/order-success'), // confirmar pedido
+                        : () {
+                          final cartItems = ref.read(cartProvider);
+        final subtotal = ref.read(cartSubtotalProvider);
+        final shipping = _dates[_selectedDate]['type'] == 'Express' ? 24.90 : 0.0;
+        final tax = subtotal * 0.21;
+        final total = subtotal + shipping + tax;
+
+        ref.read(ordersProvider.notifier).createOrder(
+          items: cartItems,
+          subtotal: subtotal,
+          shipping: shipping,
+          tax: tax,
+          total: total,
+          deliveryAddress: 'Calle Mayor 45, 28013 Madrid', // por ahora fijo
+          deliveryType: _dates[_selectedDate]['type']!,
+        );
+
+        ref.read(cartProvider.notifier).clearCart(); // 👈 vacía el carrito
+
+        context.push('/order-success');
+                        }, // confirmar pedido
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
                       shape: RoundedRectangleBorder(
@@ -557,6 +580,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildStepConfirmacion() {
+    final cartItems = ref.watch(cartProvider);
+  final subtotal = ref.watch(cartSubtotalProvider);
+  final shipping = _dates[_selectedDate]['type'] == 'Express' ? 24.90 : 0.0;
+  final tax = subtotal * 0.21;
+  final total = subtotal + shipping + tax;
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
       child: Container(
@@ -578,8 +606,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount: 2,
+                itemCount: cartItems.length,
                 itemBuilder: (context, index) {
+                  final item = cartItems[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Row(
@@ -596,7 +625,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.asset(
-                              'lib/images/cement.png',
+                              item.product.images[0],
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -608,7 +637,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Portland Cement High Performance 25kg',
+                                item.product.name,
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
@@ -620,14 +649,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'QTY: 12',
+                                    'QTY: ${item.quantity}',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey[600],
                                     ),
                                   ),
                                   Text(
-                                    '€114.60',
+                                    '€${item.subtotal.toStringAsFixed(2)}',
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -650,7 +679,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 children: [
                   Text('Subtotal', style: TextStyle(color: Colors.grey[600])),
                   Text(
-                    '€463.60',
+                    '€${subtotal.toStringAsFixed(2)}',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -663,7 +692,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     'Shipping (Express)',
                     style: TextStyle(color: Colors.grey[600]),
                   ),
-                  Text('€24.90', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    '€${shipping.toStringAsFixed(2)}',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
               SizedBox(height: 8),
@@ -675,7 +707,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                   Text(
-                    '€102.58',
+                    '€${tax.toStringAsFixed(2)}',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -691,7 +723,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   Text(
-                    '€591.08',
+                    '€${total.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,

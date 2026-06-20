@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:obramat/models/projects.dart';
+import 'package:obramat/models/user.dart';
+import 'package:obramat/providers/cart_provider.dart';
+import 'package:obramat/providers/orders_provider.dart';
+import 'package:obramat/providers/project_provider.dart';
+import 'package:obramat/providers/user_provider.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(userProvider);
+    final ordersCount = ref.watch(ordersProvider).length; // 👈 reusa el provider de pedidos
+    final activeProjectsCount = ref.watch(projectsByStatusProvider(ProjectStatus.active)).length; // 👈
+
     return Scaffold(
       appBar: AppBarWidget(
         title: 'Perfil',
@@ -75,7 +87,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Juan Pérez',
+                  user.name,
                   style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
@@ -83,12 +95,12 @@ class ProfileScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Master Contractor',
+                      user.role,
                       style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'ID: OBR-31223',
+                      'ID: ${user.professionalId}',
                       style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                   ],
@@ -117,7 +129,7 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '12',
+                                '$ordersCount',
                                 style: TextStyle(
                                   fontSize: 28,
                                   color: AppColors.primaryColor,
@@ -148,7 +160,7 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '34',
+                                '$activeProjectsCount',
                                 style: TextStyle(
                                   fontSize: 28,
                                   color: AppColors.primaryColor,
@@ -202,65 +214,17 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Text(
-                          'Nombre',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          'Juan Pérez',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[600])),
+                        Text(user.name, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)), // 👈
                         SizedBox(height: 16),
-                        Text(
-                          'Email',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          'juan.perez@example.com',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('Email', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[600])),
+                        Text(user.email, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)), // 👈
                         SizedBox(height: 16),
-                        Text(
-                          'Teléfono',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          '123456789',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('Teléfono', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[600])),
+                        Text(user.phone, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)), // 👈
                         SizedBox(height: 16),
-                        Text(
-                          'TAX ID / CIF',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          'B12345678',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('TAX ID / CIF', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[600])),
+                        Text(user.taxId, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)), // 👈
                       ],
                     ),
                   ),
@@ -362,10 +326,8 @@ class ProfileScreen extends StatelessWidget {
                 ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount: 3,
-                itemBuilder: (context, index) {
-                  return adresses();
-                },
+                itemCount: user.addresses.length, // 👈
+                itemBuilder: (context, index) => adressesCard(user.addresses[index]), // 👈
               ),
               Text(
                 'PAYMENT METHODS',
@@ -376,7 +338,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 16),
-              creditCard(context),
+              creditCard(context, user),
               SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -411,35 +373,28 @@ class ProfileScreen extends StatelessWidget {
              Divider(),
              SizedBox(height: 16),
               SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  height: 48,
-                  child: ElevatedButton(
-                    
-                    style: ElevatedButton.styleFrom(
-                      
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {},
-                    child: Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    Icon(Icons.logout, color: Colors.red, size: 20),
-    SizedBox(width: 8),
-    Text(
-      'CERRAR SESIÓN',
-      style: TextStyle(
-        letterSpacing: 1.2,
-        color: Colors.red,
-        fontWeight: FontWeight.bold,
-      ),
+  width: MediaQuery.of(context).size.width * 0.8,
+  height: 48,
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
-  ],
+    onPressed: () {
+      // 👈 limpia el carrito al cerrar sesión (buena práctica)
+      ref.read(cartProvider.notifier).clearCart();
+      context.go('/login');
+    },
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.logout, color: Colors.red, size: 20),
+        SizedBox(width: 8),
+        Text('CERRAR SESIÓN', style: TextStyle(letterSpacing: 1.2, color: Colors.red, fontWeight: FontWeight.bold)),
+      ],
+    ),
+  ),
 ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -448,7 +403,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Container adresses() {
+  Container adressesCard(Address address) {
     return Container(
                 margin: EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -476,19 +431,8 @@ class ProfileScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Residencial Los Olivos',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          Text(
-                            'Calle Mayor 45, planta 2, Salamanca',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                            ),
-                          ),
+                          Text(address.name, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)), // 👈
+                          Text(address.fullAddress, style: TextStyle(color: Colors.grey[600])),
                         ],
                       ),
                     ],
@@ -497,7 +441,7 @@ class ProfileScreen extends StatelessWidget {
               );
   }
 
-  Widget creditCard(BuildContext context) {
+  Widget creditCard(BuildContext context, User user) {
   return Container(
     height: 200,
     width: double.infinity,
@@ -526,7 +470,7 @@ class ProfileScreen extends StatelessWidget {
               size: 32,
             ),
             Text(
-              'CONSTRUCTA PRO CARD',
+              user.paymentMethods[0].label.toUpperCase(),
               style: TextStyle(
                 color: Color(0xFFFF671F), // Naranja Obramat
                 fontSize: 12,
@@ -550,7 +494,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             SizedBox(width: 8),
             Text(
-              '8829',
+              user.paymentMethods[0].detail.replaceAll('**** ', ''),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
