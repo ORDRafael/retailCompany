@@ -1,46 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:obramat/models/product.dart';
+import 'package:obramat/models/projects.dart';
+import 'package:obramat/providers/cart_provider.dart';
+import 'package:obramat/providers/project_provider.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 
-class ProjectDetailScreen extends StatelessWidget {
-  const ProjectDetailScreen({super.key});
-
-  final List<Map<String, dynamic>> _materials = const [
-    {
-      'name': 'Saco Cemento Gris 25kg',
-      'ref': 'REF: 10345672',
-      'brand': 'HOLCIM',
-      'image': 'lib/images/cement.png',
-      'inStock': true,
-      'qty': 12,
-      'unitPrice': 4.25,
-      'subtotal': 51.00,
-    },
-    {
-      'name': 'Azulejo Blanco Mate 30×60',
-      'ref': 'REF: 10922384',
-      'brand': 'ROCA',
-      'image': 'lib/images/cement2.png',
-      'inStock': true,
-      'qty': 45,
-      'unitPrice': 18.90,
-      'subtotal': 850.50,
-    },
-    {
-      'name': 'Tubo de Cobre 15mm (5m)',
-      'ref': 'REF: 22883901',
-      'brand': 'SANITHERM',
-      'image': 'lib/images/fontaneria.png',
-      'inStock': false,
-      'qty': 8,
-      'unitPrice': 42.35,
-      'subtotal': 338.80,
-    },
-  ];
+class ProjectDetailScreen extends ConsumerWidget {
+  final String projectId;
+  const ProjectDetailScreen({super.key, required this.projectId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final project = ref.watch(projectByIdProvider(projectId));
+
+    if (project == null) {
+      return Scaffold(
+        appBar: AppBarWidget(title: 'Proyecto'),
+        body: Center(child: Text('Proyecto no encontrado')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBarWidget(
         title: 'OBRAMAT',
@@ -89,7 +71,7 @@ class ProjectDetailScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '1.501,00€',
+                  '€${project.totalProject.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
@@ -116,7 +98,38 @@ class ProjectDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () => context.go('/cart'),
+                onPressed: () {
+                  // 👈 añade todos los materiales del proyecto al carrito
+                  for (final material in project.materials) {
+                    final product = Product(
+                      id: '${project.id}-${material.ref}',
+                      name: material.name,
+                      category: 'PROJECT MATERIAL',
+                      ref: material.ref,
+                      brand: material.brand,
+                      price: material.unitPrice,
+                      images: [material.image],
+                      inStock: material.inStock,
+                      stockUnits: 0,
+                      rating: 0,
+                      reviews: 0,
+                      description: '',
+                      features: [],
+                      specs: {},
+                    );
+                    ref.read(cartProvider.notifier).addProduct(
+                      product,
+                      quantity: material.quantity,
+                    );
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Materiales añadidos al carrito'),
+                      backgroundColor: AppColors.primaryColor,
+                    ),
+                  );
+                  context.go('/cart');
+                },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -159,7 +172,7 @@ class ProjectDetailScreen extends StatelessWidget {
               ),
               SizedBox(height: 4),
               Text(
-                'Reforma Baño Calle Mayor',
+                project.name,
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
@@ -177,7 +190,7 @@ class ProjectDetailScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'ID: 2948-B',
+                      'ID: ${project.id}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -194,7 +207,7 @@ class ProjectDetailScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'EN PROGRESO',
+                      _statusLabel(project.status ),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -238,7 +251,7 @@ class ProjectDetailScreen extends StatelessWidget {
                   Expanded(
                     child: _statCard(
                       label: 'TOTAL ARTÍCULOS',
-                      value: '14',
+                      value: '${project.totalArticles}',
                       isHighlight: false,
                     ),
                   ),
@@ -246,7 +259,7 @@ class ProjectDetailScreen extends StatelessWidget {
                   Expanded(
                     child: _statCard(
                       label: 'BASE IMPONIBLE',
-                      value: '1.240,50€',
+                      value: '€${project.baseImponible.toStringAsFixed(2)}',
                       isHighlight: false,
                     ),
                   ),
@@ -258,7 +271,7 @@ class ProjectDetailScreen extends StatelessWidget {
                   Expanded(
                     child: _statCard(
                       label: 'IVA (21%)',
-                      value: '260,50€',
+                      value: '€${project.tax.toStringAsFixed(2)}', 
                       isHighlight: false,
                     ),
                   ),
@@ -266,22 +279,34 @@ class ProjectDetailScreen extends StatelessWidget {
                   Expanded(
                     child: _statCard(
                       label: 'TOTAL PROYECTO',
-                      value: '1.501,00€',
+                      value: '€${project.totalProject.toStringAsFixed(2)}',
                       isHighlight: true,
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 24),
-              // Lista de materiales
-              ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: _materials.length,
-                itemBuilder: (context, index) {
-                  return _materialCard(_materials[index]);
-                },
-              ),
+               if (project.materials.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[300]),
+                        SizedBox(height: 16),
+                        Text('Aún no hay materiales en este proyecto', style: TextStyle(color: Colors.grey[500])),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: project.materials.length, // 👈
+                  itemBuilder: (context, index) => _materialCard(project.materials[index]), // 👈
+                ),
+             
             ],
           ),
         ),
@@ -289,11 +314,18 @@ class ProjectDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _statCard({
-    required String label,
-    required String value,
-    required bool isHighlight,
-  }) {
+  String _statusLabel(ProjectStatus status) {
+    switch (status) {
+      case ProjectStatus.active:
+        return 'EN PROGRESO';
+      case ProjectStatus.pending:
+        return 'PENDIENTE';
+      case ProjectStatus.completed:
+        return 'COMPLETADO';
+    }
+  }
+
+  Widget _statCard({required String label, required String value, required bool isHighlight}) {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -303,30 +335,15 @@ class ProjectDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: isHighlight ? Colors.white70 : Colors.grey[500],
-              letterSpacing: 1.2,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isHighlight ? Colors.white70 : Colors.grey[500], letterSpacing: 1.2)),
           SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: isHighlight ? Colors.white : Colors.black,
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: isHighlight ? Colors.white : Colors.black)),
         ],
       ),
     );
   }
 
-  Widget _materialCard(Map<String, dynamic> material) {
+  Widget _materialCard(ProjectMaterial material) { // 👈 recibe ProjectMaterial
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.all(16),
@@ -338,60 +355,31 @@ class ProjectDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Imagen + info
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  material['image'] as String,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.asset(material.image, width: 70, height: 70, fit: BoxFit.cover), // 👈
               ),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      material['name'] as String,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
+                    Text(material.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)), // 👈
                     SizedBox(height: 4),
-                    Text(
-                      '${material['ref']} • ${material['brand']}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
+                    Text('REF: ${material.ref} • ${material.brand}', style: TextStyle(fontSize: 12, color: Colors.grey[500])), // 👈
                     SizedBox(height: 8),
                     Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: material['inStock'] as bool
-                            ? Colors.green[50]
-                            : Colors.red[50],
+                        color: material.inStock ? Colors.green[50] : Colors.red[50],
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        material['inStock'] as bool
-                            ? 'STOCK DISPONIBLE'
-                            : 'SIN STOCK EN ALMACÉN',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: material['inStock'] as bool
-                              ? Colors.green[700]
-                              : Colors.red[700],
-                        ),
+                        material.inStock ? 'STOCK DISPONIBLE' : 'SIN STOCK EN ALMACÉN',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: material.inStock ? Colors.green[700] : Colors.red[700]),
                       ),
                     ),
                   ],
@@ -400,77 +388,38 @@ class ProjectDetailScreen extends StatelessWidget {
             ],
           ),
           SizedBox(height: 16),
-          // Cantidad + precios
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Selector cantidad
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
                 child: Row(
                   children: [
                     Icon(Icons.remove, size: 16, color: Colors.black87),
                     SizedBox(width: 16),
-                    Text(
-                      '${material['qty']}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Text('${material.quantity}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), // 👈
                     SizedBox(width: 16),
                     Icon(Icons.add, size: 16, color: Colors.black87),
                   ],
                 ),
               ),
-              // Precios
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'PRECIO UNIT.',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Text('PRECIO UNIT.', style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.bold)),
                       SizedBox(width: 16),
-                      Text(
-                        'SUBTOTAL',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Text('SUBTOTAL', style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.bold)),
                     ],
                   ),
                   SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
-                        '${material['unitPrice']}€',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
+                      Text('€${material.unitPrice.toStringAsFixed(2)}', style: TextStyle(fontSize: 14, color: Colors.grey[600])), // 👈
                       SizedBox(width: 16),
-                      Text(
-                        '${material['subtotal']}€',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
+                      Text('€${material.subtotal.toStringAsFixed(2)}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primaryColor)), // 👈
                     ],
                   ),
                 ],

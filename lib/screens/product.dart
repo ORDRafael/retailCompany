@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:obramat/providers/product_providers.dart';
 import 'package:obramat/widgets/appbar.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:go_router/go_router.dart';
+import 'package:obramat/providers/cart_provider.dart';
 
-class ProductScreen extends StatefulWidget {
-  ProductScreen({super.key});
+ 
+class ProductScreen extends ConsumerStatefulWidget {
+  final String productId;
+  const ProductScreen({super.key, required this.productId});
 
   @override
-  State<ProductScreen> createState() => _ProductScreenState();
+  ConsumerState<ProductScreen> createState() => _ProductScreenState();
 }
 
-class _ProductScreenState extends State<ProductScreen> {
+class _ProductScreenState extends ConsumerState<ProductScreen> {
   int _selectedImage = 0;
+  int _quantity = 1;
 
-  final List<String> _images = [
-    'lib/images/cement.png',
-    'lib/images/cement2.png',
-    'lib/images/cement3.png',
-  ];
+  late List<String> productImages;
 
   @override
   Widget build(BuildContext context) {
+    final product = ref.watch(productByIdProvider(widget.productId)); // 👈 debe estar aquí
+
+    if (product == null) {
+      return Scaffold(body: Center(child: Text('Producto no encontrado')));
+    }
+    
     return Scaffold(
       appBar: AppBarWidget(
         title: 'Producto',
@@ -52,7 +60,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Image.asset(
-                    _images[_selectedImage], // 👈 imagen activa
+                    product.images[_selectedImage], // 👈 imagen activa
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -62,7 +70,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 height: 70,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _images.length,
+                  itemCount: product.images.length,
                   itemBuilder: (context, index) {
                     final isSelected = _selectedImage == index;
                     return GestureDetector(
@@ -81,7 +89,7 @@ class _ProductScreenState extends State<ProductScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(7),
-                          child: Image.asset(_images[index], fit: BoxFit.cover),
+                          child: Image.asset(product.images[index], fit: BoxFit.cover),
                         ),
                       ),
                     );
@@ -111,7 +119,7 @@ class _ProductScreenState extends State<ProductScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'PORTLAND CEMENT CEM II 42.5 R',
+                product.name,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -135,7 +143,7 @@ class _ProductScreenState extends State<ProductScreen> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'SKU: 08-9921-X',
+                    product.ref,
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ],
@@ -284,10 +292,19 @@ class _ProductScreenState extends State<ProductScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Icon(Icons.remove, color: Colors.black87, size: 15),
+                            GestureDetector(
+                              onTap: () {
+                                if (_quantity > 1) {
+                                  setState(() {
+                                    _quantity--;
+                                  });
+                                }
+                              },
+                              child: Icon(Icons.remove, color: Colors.black87, size: 15),
+                            ),
                             SizedBox(width: 12),
                             Text(
-                              '5',
+                              '$_quantity',
                               style: TextStyle(
                                 color: Colors.black87,
                                 fontSize: 16,
@@ -295,7 +312,14 @@ class _ProductScreenState extends State<ProductScreen> {
                               ),
                             ),
                             SizedBox(width: 12),
-                            Icon(Icons.add, color: Colors.black87, size: 15),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _quantity++;
+                                });
+                              },
+                              child: Icon(Icons.add, color: Colors.black87, size: 15),
+                            ),
                           ],
                         ),
                       ),
@@ -310,7 +334,19 @@ class _ProductScreenState extends State<ProductScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+      ref.read(cartProvider.notifier).addProduct(
+        product,
+        quantity: _quantity,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${product.name} añadido al carrito'),
+          backgroundColor: AppColors.primaryColor,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

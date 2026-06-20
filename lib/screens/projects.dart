@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:obramat/models/projects.dart';
+import 'package:obramat/providers/project_provider.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 
-class Projects extends StatefulWidget {
+class Projects extends ConsumerStatefulWidget {
   const Projects({super.key});
 
   @override
-  State<Projects> createState() => _ProjectsState();
+  ConsumerState<Projects> createState() => _ProjectsState();
 }
 
-class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin {
+class _ProjectsState extends ConsumerState<Projects> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -27,6 +30,10 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final allProjects = ref.watch(projectsProvider);
+    final activeProjects = ref.watch(projectsByStatusProvider(ProjectStatus.active));
+    final pendingProjects = ref.watch(projectsByStatusProvider(ProjectStatus.pending));
+    final totalInvestment = ref.watch(totalInvestmentProvider);
     return Scaffold(
       appBar: AppBarWidget(title: 'MY PROJECTS'),
       body: Column(
@@ -87,19 +94,19 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
                     Tab(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Text('TODOS (12)'),
+                        child: Text('TODOS (${allProjects.length})'),
                       ),
                     ),
                     Tab(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text('ACTIVOS (4)'),
+                        child: Text('ACTIVOS (${activeProjects.length})'),
                       ),
                     ),
                     Tab(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text('PENDIENTES (8)'),
+                        child: Text('PENDIENTES (${pendingProjects.length})'),
                       ),
                     ),
                   ],
@@ -114,36 +121,11 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
             child: TabBarView(
               controller: _tabController,
               children: [
-                // TODOS
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      ...List.generate(3, (index) => projectCard(context)),
-                      proFooter(totalInversion: '€125.450,00'),
-                    ],
-                  ),
-                ),
-                // ACTIVOS
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      ...List.generate(3, (index) => projectCard(context)),
-                      proFooter(totalInversion: '59.460,50 €'),
-                    ],
-                  ),
-                ),
-                // PENDIENTES
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      ...List.generate(1, (index) => projectCard(context)),
-                      proFooter(totalInversion: '€125.450,00'),
-                    ],
-                  ),
-                ),
+                _buildProjectsList(allProjects, totalInvestment),
+                _buildProjectsList(activeProjects,
+                    activeProjects.fold(0.0, (sum, p) => sum + p.totalProject)),
+                _buildProjectsList(pendingProjects,
+                    pendingProjects.fold(0.0, (sum, p) => sum + p.totalProject)),
               ],
             ),
           ),
@@ -153,6 +135,56 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
     );
   }
 
+ Widget _buildProjectsList(List<Project> projects, double totalInvestment) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          if (projects.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.folder_off_outlined,
+                        size: 64, color: Colors.grey[300]),
+                    SizedBox(height: 16),
+                    Text('No hay proyectos en esta categoría',
+                        style: TextStyle(color: Colors.grey[500])),
+                  ],
+                ),
+              ),
+            )
+          else
+           ...projects.map((project) => projectCard(project)), // 👈 ya no necesita GestureDetector extra
+        proFooter(totalInversion: '€${totalInvestment.toStringAsFixed(2)}'),
+        ],
+      ),
+    );
+  }
+
+    Color _statusColor(ProjectStatus status) {
+    switch (status) {
+      case ProjectStatus.active:
+        return Colors.green;
+      case ProjectStatus.pending:
+        return Colors.orange;
+      case ProjectStatus.completed:
+        return Colors.grey;
+    }
+  }
+
+  String _statusLabel(ProjectStatus status) {
+    switch (status) {
+      case ProjectStatus.active:
+        return 'ACTIVO';
+      case ProjectStatus.pending:
+        return 'PENDIENTE';
+      case ProjectStatus.completed:
+        return 'COMPLETADO';
+    }
+  }
+  
   Widget proFooter({required String totalInversion}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,9 +245,9 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
     ],
   );
 }
-  Widget projectCard(BuildContext context) {
+  Widget projectCard(Project project) {
     return GestureDetector(
-      onTap: () => context.push('/project-detail'),
+      onTap: () => context.push('/project/${project.id}'),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -250,13 +282,13 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
+                      color: _statusColor(project.status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'ACTIVO',
+                      _statusLabel(project.status),
                       style: TextStyle(
-                        color: Colors.green[700],
+                        color: _statusColor(project.status),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -267,7 +299,7 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
               const SizedBox(height: 12),
               // Nombre del proyecto
               Text(
-                'Reforma Baño Calle Mayor',
+                project.name,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
@@ -291,7 +323,7 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '24 Artículos',
+                        '${project.totalArticles} Artículos',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -310,7 +342,7 @@ class _ProjectsState extends State<Projects> with SingleTickerProviderStateMixin
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '4.850,00 €',
+                        '€${project.estimatedBudget.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

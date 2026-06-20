@@ -1,17 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:obramat/models/projects.dart';
+import 'package:obramat/providers/project_provider.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 
-class NewProjectScreen extends StatefulWidget {
+class NewProjectScreen extends ConsumerStatefulWidget {
   const NewProjectScreen({super.key});
 
   @override
-  State<NewProjectScreen> createState() => _NewProjectScreenState();
+  ConsumerState<NewProjectScreen> createState() => _NewProjectScreenState();
 }
 
-class _NewProjectScreenState extends State<NewProjectScreen> {
+class _NewProjectScreenState extends ConsumerState<NewProjectScreen> {
   DateTime _selectedDate = DateTime.now();
+
+  final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _budgetController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+   @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    _budgetController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+    void _createProject() { // 👈 esta línea te falta
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Por favor ingresa un nombre para el proyecto')),
+      );
+      return;
+    }
+
+  final newProject = Project(
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // id único simple
+      name: _nameController.text.trim(),
+      address: _addressController.text.trim(),
+      startDate: _selectedDate,
+      estimatedBudget: double.tryParse(_budgetController.text) ?? 0.0,
+      description: _descriptionController.text.trim(),
+      status: ProjectStatus.pending, // nuevo proyecto empieza como pendiente
+      image: 'lib/images/obra.png', // imagen por defecto
+      materials: [], // sin materiales aún
+    );
+
+    ref.read(projectsProvider.notifier).addProject(newProject);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Proyecto "${newProject.name}" creado correctamente'),
+        backgroundColor: AppColors.primaryColor,
+      ),
+    );
+
+    context.pop(); // vuelve a la pantalla de Projects
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +84,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: () => context.pop(),
+            onPressed: _createProject,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -100,6 +149,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   _buildLabel('NOMBRE DEL PROYECTO'),
                   SizedBox(height: 8),
                   _buildTextField(
+                    controller: _nameController,
                     hint: 'Ej. Reforma Cocina Calle Mayor',
                   ),
                   SizedBox(height: 24),
@@ -107,6 +157,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   _buildLabel('UBICACIÓN / DIRECCIÓN'),
                   SizedBox(height: 8),
                   _buildTextField(
+                    controller: _addressController,
                     hint: 'Calle, Número, Ciudad',
                     prefixIcon: Icons.location_on_outlined,
                   ),
@@ -221,6 +272,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   _buildLabel('PRESUPUESTO ESTIMADO'),
                   SizedBox(height: 8),
                   _buildTextField(
+                    controller: _budgetController,
                     hint: '0.00',
                     prefixIcon: Icons.euro,
                     keyboardType: TextInputType.number,
@@ -230,6 +282,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   _buildLabel('DESCRIPCIÓN / NOTAS'),
                   SizedBox(height: 8),
                   TextField(
+                    controller: _descriptionController,
                     maxLines: 5,
                     decoration: InputDecoration(
                       hintText:
@@ -267,11 +320,13 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   }
 
   Widget _buildTextField({
+    required TextEditingController controller,
     required String hint,
     IconData? prefixIcon,
     TextInputType? keyboardType,
   }) {
     return TextField(
+      controller: controller,
       keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hint,

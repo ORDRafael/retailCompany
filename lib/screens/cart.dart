@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:obramat/models/cart_item.dart';
+import 'package:obramat/providers/cart_provider.dart';
 import 'package:obramat/utils/colors.dart';
 import 'package:obramat/widgets/appbar.dart';
 import 'package:go_router/go_router.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cartItems = ref.watch(cartProvider);
+    final subtotal = ref.watch(cartSubtotalProvider);
+
     return Scaffold(
       appBar: AppBarWidget(title: 'OBRAMAT'),
       body: SingleChildScrollView(
@@ -21,20 +27,40 @@ class CartScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
               ),
               Text(
-                '3 Professional Grade Items',
+                '${cartItems.length} Professional Grade Items',
                 style: TextStyle(color: Colors.grey[600], fontSize: 16),
               ),
               SizedBox(height: 16),
+              if (cartItems.isEmpty) // 👈 estado vacío
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.shopping_cart_outlined,
+                            size: 64, color: Colors.grey[300]),
+                        SizedBox(height: 16),
+                        Text(
+                          'Tu carrito está vacío',
+                          style: TextStyle(
+                              color: Colors.grey[500], fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: 3,
+                itemCount: cartItems.length,
                 itemBuilder: (context, index) {
-                  return itemCartCard(context);
+                  return itemCartCard(context, ref, cartItems[index]);
                 },
               ),
               SizedBox(height: 16),
-              summaryCard(context),
+              if (cartItems.isNotEmpty)
+              summaryCard(context, ref, subtotal),
             ],
           ),
         ),
@@ -42,7 +68,10 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Container summaryCard(BuildContext context) {
+  Container summaryCard(BuildContext context, WidgetRef ref, double subtotal) {
+    final shipping = 25.00;
+    final tax = subtotal * 0.21;
+    final total = subtotal + shipping + tax;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -67,7 +96,7 @@ class CartScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 Text(
-                  '\$1,234.56',
+                  '€${subtotal.toStringAsFixed(2)}',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -81,7 +110,7 @@ class CartScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 Text(
-                  '\$25.00',
+                  '€${shipping.toStringAsFixed(2)}',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -95,7 +124,7 @@ class CartScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 Text(
-                  '\$115.00',
+                  '€${tax.toStringAsFixed(2)}',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -111,7 +140,7 @@ class CartScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 Text(
-                  '\$1,374.56',
+                  '€${total.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -221,7 +250,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Container itemCartCard(BuildContext context) {
+  Container itemCartCard(BuildContext context, WidgetRef ref, CartItem item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -253,12 +282,12 @@ class CartScreen extends StatelessWidget {
                           0.30, // cuadrado proporcional
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Image.asset('lib/images/producto.png'),
+                        child: Image.asset(item.product.images[0]),
                       ),
                     ),
                     SizedBox(height: 15),
                     Text(
-                      '€24.95',
+                      '€${item.product.price.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -274,7 +303,7 @@ class CartScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'BUILDING MATERIALS',
+                          item.product.category,
                           style: TextStyle(
                             color: AppColors.primaryColor,
                             fontSize: 12,
@@ -282,14 +311,14 @@ class CartScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Galvanized Steel Rebar 12mm x 6m',
+                          item.product.name,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'REF: 25102547',
+                          'REF: ${item.product.ref}',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -311,14 +340,19 @@ class CartScreen extends StatelessWidget {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      Icon(
-                                        Icons.remove,
-                                        color: Colors.black87,
-                                        size: 15,
+                                      GestureDetector(
+                                        onTap: () => ref
+                                            .read(cartProvider.notifier)
+                                            .decrementQuantity(item.product.id),
+                                        child: Icon(
+                                          Icons.remove,
+                                          color: Colors.black87,
+                                          size: 15,
+                                        ),
                                       ),
                                       SizedBox(width: 8),
                                       Text(
-                                        '5',
+                                        '${item.quantity}',
                                         style: TextStyle(
                                           color: Colors.black87,
                                           fontSize: 16,
@@ -326,10 +360,15 @@ class CartScreen extends StatelessWidget {
                                         ),
                                       ),
                                       SizedBox(width: 8),
-                                      Icon(
-                                        Icons.add,
-                                        color: Colors.black87,
-                                        size: 15,
+                                      GestureDetector(
+                                        onTap: () => ref
+                                            .read(cartProvider.notifier)
+                                            .incrementQuantity(item.product.id),
+                                        child: Icon(
+                                          Icons.add,
+                                          color: Colors.black87,
+                                          size: 15,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -338,7 +377,9 @@ class CartScreen extends StatelessWidget {
                             ),
                             SizedBox(width: 8),
                             IconButton(
-                              onPressed: () {},
+                              onPressed: () => ref
+                                  .read(cartProvider.notifier)
+                                  .removeProduct(item.product.id),
                               icon: Icon(
                                 Icons.delete_outline,
                                 color: Colors.black,

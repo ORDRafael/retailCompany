@@ -45,9 +45,12 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const NewProjectScreen(),
         ),
         GoRoute(
-          path: '/project-detail',
-          builder: (context, state) => const ProjectDetailScreen(),
-        ),
+          path: '/project/:id',
+          builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ProjectDetailScreen(projectId: id);
+        },
+),
       ],
     ),
     GoRoute(
@@ -56,7 +59,10 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/product/:id',
-      builder: (context, state) => ProductScreen(),
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return ProductScreen(productId: id); // 👈 debe pasarlo
+      },
     ),
     GoRoute(
       path: '/checkout',
